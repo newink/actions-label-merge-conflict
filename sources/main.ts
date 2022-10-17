@@ -1,5 +1,6 @@
 import * as core from "@actions/core";
 import * as github from "@actions/github";
+import TelegramBot from "node-telegram-bot-api";
 
 type GitHub = ReturnType<typeof github.getOctokit>;
 const prDirtyStatusesOutputKey = `prDirtyStatuses`;
@@ -25,6 +26,13 @@ async function main() {
 	const commentOnDirty = core.getInput("commentOnDirty");
 	const commentOnClean = core.getInput("commentOnClean");
 
+	const telegramBotToken = core.getInput("telegramBotToken");
+	const telegramChatId = core.getInput("telegramChatId");
+	const telegramMessageTemplate = core.getInput("telegramMessageTemplate");
+	const telegramNotificationEnabled = core.getBooleanInput("telegramNotificationEnabled")
+	const telegramLogins = JSON.parse(core.getInput("telegramLogins")) as TelegramLogins
+
+
 	const isPushEvent = process.env.GITHUB_EVENT_NAME === "push";
 	core.debug(`isPushEvent = ${process.env.GITHUB_EVENT_NAME} === "push"`);
 	const baseRefName = isPushEvent ? getBranchName(github.context.ref) : null;
@@ -41,6 +49,11 @@ async function main() {
 		after: null,
 		retryAfter,
 		retryMax,
+		telegramBotToken,
+		telegramChatId,
+		telegramNotificationEnabled,
+		telegramMessageTemplate,
+		telegramLogins
 	});
 
 	core.setOutput(prDirtyStatusesOutputKey, dirtyStatuses);
@@ -64,6 +77,11 @@ interface CheckDirtyContext {
 	retryAfter: number;
 	// number of allowed retries
 	retryMax: number;
+	telegramBotToken: string;
+	telegramChatId: string;
+	telegramMessageTemplate: string;
+	telegramNotificationEnabled: boolean;
+	telegramLogins: TelegramLogins;
 }
 async function checkDirty(
 	context: CheckDirtyContext
@@ -89,6 +107,7 @@ async function checkDirty(
 		repository: {
 			pullRequests: {
 				nodes: Array<{
+					author: { login: string }
 					mergeable: string;
 					number: number;
 					permalink: string;
@@ -110,6 +129,9 @@ query openPullRequests($owner: String!, $repo: String!, $after: String, $baseRef
   repository(owner:$owner, name: $repo) { 
     pullRequests(first: 100, after: $after, states: OPEN, baseRefName: $baseRefName) {
       nodes {
+		author {
+			login
+		}
         mergeable
         number
         permalink
@@ -162,8 +184,7 @@ query openPullRequests($owner: String!, $repo: String!, $after: String, $baseRef
 		switch (pullRequest.mergeable) {
 			case "CONFLICTING":
 				info(
-					`add "${dirtyLabel}", remove "${
-						removeOnDirtyLabel ? removeOnDirtyLabel : `nothing`
+					`add "${dirtyLabel}", remove "${removeOnDirtyLabel ? removeOnDirtyLabel : `nothing`
 					}"`
 				);
 				// for labels PRs and issues are the same
@@ -177,6 +198,21 @@ query openPullRequests($owner: String!, $repo: String!, $after: String, $baseRef
 					await addComment(commentOnDirty, pullRequest, { client });
 				}
 				dirtyStatuses[pullRequest.number] = true;
+
+				info(`Preparing telegram notification: ${context}`)
+				if (context.telegramBotToken && context.telegramNotificationEnabled && context.telegramChatId) {
+					const bot = new TelegramBot(context.telegramBotToken, { polling: true });
+
+					const telegramLogin = context.telegramLogins[pullRequest.author.login] || '';
+
+					const message = context.telegramMessageTemplate.replace('{tg_login}', telegramLogin);
+					await bot.sendMessage(context.telegramChatId, message, {
+						parse_mode: 'MarkdownV2'
+					});
+				} else {
+					info(`Telegram notifications disabled`)
+				}
+
 				break;
 			case "MERGEABLE":
 				info(`remove "${dirtyLabel}"`);
@@ -354,3 +390,5 @@ main().catch((error) => {
 	core.error(String(error));
 	core.setFailed(String(error.message));
 });
+
+type TelegramLogins = Record<string, string>
