@@ -179,6 +179,8 @@ query openPullRequests($owner: String!, $repo: String!, $after: String, $baseRef
 	for (const pullRequest of pullRequests) {
 		core.debug(JSON.stringify(pullRequest, null, 2));
 
+		core.error('TEST CODE GIT')
+
 		const info = (message: string) =>
 			core.info(`for PR "${pullRequest.title}": ${message}`);
 
