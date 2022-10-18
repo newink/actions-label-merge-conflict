@@ -207,7 +207,8 @@ query openPullRequests($owner: String!, $repo: String!, $after: String, $baseRef
 					const telegramLogin = context.telegramLogins[pullRequest.author.login] || '';
 
 					const message = context.telegramMessageTemplate.replace('{tg_login}', telegramLogin)
-						.replace('{pr_link}', pullRequest.permalink);
+						.replace('{pr_link}', pullRequest.permalink)
+						.replace('{pr_title}', pullRequest.title);
 					
 					info(`tg message: ${message}`);
 					await bot.sendMessage(context.telegramChatId, message, {
