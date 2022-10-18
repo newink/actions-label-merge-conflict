@@ -1,7 +1,7 @@
 import * as core from "@actions/core";
 import * as github from "@actions/github";
 import TelegramBot from "node-telegram-bot-api";
-import { Telegraf }  from "telegraf";
+import Telegraf from "telegraf";
 
 type GitHub = ReturnType<typeof github.getOctokit>;
 const prDirtyStatusesOutputKey = `prDirtyStatuses`;
@@ -179,8 +179,6 @@ query openPullRequests($owner: String!, $repo: String!, $after: String, $baseRef
 	for (const pullRequest of pullRequests) {
 		core.debug(JSON.stringify(pullRequest, null, 2));
 
-		core.error('TEST CODE GIT')
-
 		const info = (message: string) =>
 			core.info(`for PR "${pullRequest.title}": ${message}`);
 
@@ -204,14 +202,15 @@ query openPullRequests($owner: String!, $repo: String!, $after: String, $baseRef
 
 				info(`Preparing telegram notification: ${JSON.stringify(context)}`)
 				if (context.telegramBotToken && context.telegramNotificationEnabled && context.telegramChatId) {
-					const bot = new Telegraf(context.telegramBotToken);
+					const bot = new TelegramBot(context.telegramBotToken, { polling: false });
 
 					const telegramLogin = context.telegramLogins[pullRequest.author.login] || '';
 
 					const message = context.telegramMessageTemplate.replace('{tg_login}', telegramLogin)
 						.replace('{pr_link}', pullRequest.permalink)
-					bot.telegram.sendMessage(context.telegramChatId, message, {parse_mode: 'HTML'})
-					bot.stop()
+					await bot.sendMessage(context.telegramChatId, message, {
+						parse_mode: 'MarkdownV2'
+					});
 				} else {
 					info(`Telegram notifications disabled`)
 				}
