@@ -44019,6 +44019,7 @@ query openPullRequests($owner: String!, $repo: String!, $after: String, $baseRef
                         const telegramLogin = context.telegramLogins[pullRequest.author.login] || '';
                         const message = context.telegramMessageTemplate.replace('{tg_login}', telegramLogin)
                             .replace('{pr_link}', pullRequest.permalink);
+                        info(`tg message: ${message}`);
                         yield bot.sendMessage(context.telegramChatId, message, {
                             parse_mode: 'HTML'
                         });
