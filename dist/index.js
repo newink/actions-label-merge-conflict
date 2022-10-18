@@ -44014,7 +44014,7 @@ query openPullRequests($owner: String!, $repo: String!, $after: String, $baseRef
                     }
                     dirtyStatuses[pullRequest.number] = true;
                     info(`Preparing telegram notification: ${JSON.stringify(context)}`);
-                    if (context.telegramBotToken && context.telegramNotificationEnabled && context.telegramChatId) {
+                    if (addedDirtyLabel && context.telegramBotToken && context.telegramNotificationEnabled && context.telegramChatId) {
                         const bot = new node_telegram_bot_api_1.default(context.telegramBotToken, { polling: false });
                         const telegramLogin = context.telegramLogins[pullRequest.author.login] || '';
                         const message = context.telegramMessageTemplate.replace('{tg_login}', telegramLogin)
