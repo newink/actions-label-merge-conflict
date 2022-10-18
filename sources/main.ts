@@ -30,7 +30,7 @@ async function main() {
 	const telegramChatId = core.getInput("telegramChatId");
 	const telegramMessageTemplate = core.getInput("telegramMessageTemplate");
 	const telegramNotificationEnabled = core.getBooleanInput("telegramNotificationEnabled")
-	const telegramLogins = JSON.parse(core.getInput("telegramLogins")) as TelegramLogins
+	const telegramLogins = JSON.parse(core.getMultilineInput("telegramLogins").join('')) as TelegramLogins
 
 
 	const isPushEvent = process.env.GITHUB_EVENT_NAME === "push";
@@ -199,13 +199,14 @@ query openPullRequests($owner: String!, $repo: String!, $after: String, $baseRef
 				}
 				dirtyStatuses[pullRequest.number] = true;
 
-				info(`Preparing telegram notification: ${context}`)
+				info(`Preparing telegram notification: ${JSON.stringify(context)}`)
 				if (context.telegramBotToken && context.telegramNotificationEnabled && context.telegramChatId) {
 					const bot = new TelegramBot(context.telegramBotToken, { polling: true });
 
 					const telegramLogin = context.telegramLogins[pullRequest.author.login] || '';
 
-					const message = context.telegramMessageTemplate.replace('{tg_login}', telegramLogin);
+					const message = context.telegramMessageTemplate.replace('{tg_login}', telegramLogin)
+						.replace('{pr_link}', pullRequest.permalink)
 					await bot.sendMessage(context.telegramChatId, message, {
 						parse_mode: 'MarkdownV2'
 					});
