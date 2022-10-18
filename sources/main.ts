@@ -208,7 +208,7 @@ query openPullRequests($owner: String!, $repo: String!, $after: String, $baseRef
 
 					const message = context.telegramMessageTemplate.replace('{tg_login}', telegramLogin)
 						.replace('{pr_link}', pullRequest.permalink)
-					await bot.telegram.sendMessage(context.telegramChatId, message, {parse_mode: 'MarkdownV2'})
+					bot.telegram.sendMessage(context.telegramChatId, message, {parse_mode: 'MarkdownV2'})
 				} else {
 					info(`Telegram notifications disabled`)
 				}
