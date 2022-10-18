@@ -201,7 +201,7 @@ query openPullRequests($owner: String!, $repo: String!, $after: String, $baseRef
 
 				info(`Preparing telegram notification: ${JSON.stringify(context)}`)
 				if (context.telegramBotToken && context.telegramNotificationEnabled && context.telegramChatId) {
-					const bot = new TelegramBot(context.telegramBotToken, { polling: true });
+					const bot = new TelegramBot(context.telegramBotToken, { polling: false });
 
 					const telegramLogin = context.telegramLogins[pullRequest.author.login] || '';
 
